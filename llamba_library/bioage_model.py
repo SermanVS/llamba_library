@@ -18,27 +18,35 @@ class BioAgeModel():
         else:
             res = self.model(torch.from_numpy(data.values)).cpu().detach().numpy().ravel()
         return res
+    
+    def get_nearby_data(self, train_data: pd.DataFrame, data: pd.DataFrame):
+        ref_age = data.loc[0, 'Age']
+        mask = (train_data['Age'] >= ref_age - 10) & (train_data['Age'] <= ref_age + 10)
+        matches_df = train_data[mask].copy()
+        E_age = matches_df['Age'].mean()
+        return matches_df.drop(['Age'], axis=1), E_age
 
-    def get_top_shap(self, n, data, feats, shap_dict):
+    def get_top_shap(self, n, data, feats, train_data: pd.DataFrame, predict_func):
         top_shap = {}
         np.random.seed(0)
         torch.manual_seed(0)
-        explainer = shap_dict['explainer']
-        shap_values_trgt = explainer.shap_values(data.loc[0, feats].values)
-        base_value = explainer.expected_value[0]
+
+        trn_data, E_age = self.get_nearby_data(train_data, data)
+        kernel_explainer = shap.KernelExplainer(predict_func, trn_data)
+        shap_values_trgt = kernel_explainer.shap_values(data.drop(['Age'], axis=1))[0].flatten()
 
         explanation = shap.Explanation(
             values=shap_values_trgt,
-            base_values=base_value,
+            base_values=E_age,
             data=data.loc[0, feats].values,
             feature_names=feats)
 
-        permutation = np.array(explanation.values).argsort()
+        permutation = np.abs(np.array(explanation.values)).argsort()
         
         # Top-n values
         top_shap['values'] = np.array(explanation.values)[permutation][-n:].tolist()
         top_shap['data'] = np.array(explanation.data)[permutation][-n:].tolist()
         top_shap['feats'] = np.array(feats)[permutation][-n:].tolist()
         top_shap['explanation'] = explanation
-        top_shap['explainer'] = shap_dict['explainer']
+        top_shap['explainer'] = kernel_explainer
         return top_shap

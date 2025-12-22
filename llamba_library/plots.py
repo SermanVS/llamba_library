@@ -37,7 +37,7 @@ def feat_plot(feature, age, **kwargs):
 def shap_plot(shap_dict):
     feats = shap_dict['feats']
     shap.plots.waterfall(
-        shap_dict['explanation'],
+        shap_dict['explanation'][0],
         max_display=len(feats) + 1,
         show=True,
     )

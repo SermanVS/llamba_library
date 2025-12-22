@@ -54,7 +54,7 @@ You can download the sources and install them via Poetry by running the followin
 
 ### Test
 
-To test that the library works, you can run the following [notebook sample](./samples/library-in-use.ipynb):
+To test that the library works, you can run the following [notebook sample](./samples/library-in-action.ipynb):
 
 ## TODO
 
